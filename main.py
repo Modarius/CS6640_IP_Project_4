@@ -67,8 +67,9 @@ def overlap(img2, img1, offset):
     return
 
 def main():
-    image_names = open("lnis-mosaic/read.txt","r").readlines()
-    f, image_names = zip(*[('lnis-mosaic/' + fs.strip(), fs.strip().split('.')[0]) for fs in image_names]) #https://stackoverflow.com/a/2050649, https://stackoverflow.com/a/7558990
+    base_path = "cell_images/"
+    image_names = open(base_path + "read.txt","r").readlines()
+    f, image_names = zip(*[(base_path + fs.strip(), fs.strip().split('.')[0]) for fs in image_names]) #https://stackoverflow.com/a/2050649, https://stackoverflow.com/a/7558990
     
     raw_img = np.empty(len(image_names), dtype=object)
     fft_img = np.empty(len(image_names), dtype=object)
@@ -89,7 +90,7 @@ def main():
     #io.imshow(pxy)
     for peak in peaks:
         img1 = raw_img[0]
-        img2 = raw_img[1]
+        img2 = raw_img[2]
         overlap(img1, img2, peak)
     return
 
