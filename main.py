@@ -22,7 +22,7 @@ def plot_array(imgs, names):
 def phase_correlation(img1, img2):
     fft_img1 = np.fft.fft2(img1)
     fft_img2 = np.fft.fft2(img2).conjugate()
-    mask = lpfMask(img1, radius=20)
+    mask = lpfMask(img1, radius=100)
 
     top_fract = np.multiply(fft_img1, fft_img2)
     bot_fract = np.abs(top_fract)
@@ -33,25 +33,34 @@ def phase_correlation(img1, img2):
     return pxy
 
 def peakFind(in_img):
+    width = in_img.shape[0]
+    height = in_img.shape[1]
     idx = np.argmax(in_img)
-    x = idx % in_img.shape[0]
-    y = idx / in_img.shape[1]
-    return x, y
+    x = int(idx % in_img.shape[0])
+    y = int(idx / in_img.shape[1])
+    peaks = [(x,y), (width - x,y), (x, height- y), (width - x, height - y)]
+    return peaks
 
 def main():
-    image_names = open("cell_images/read.txt","r").readlines()
-    f, image_names = zip(*[('cell_images/' + fs.strip(), fs.strip().split('.')[0]) for fs in image_names]) #https://stackoverflow.com/a/2050649, https://stackoverflow.com/a/7558990
-    raw_img = io.imread_collection(f)
-    fft_img = np.fft.fftshift(np.fft.fft2(raw_img)) # shifts corners of 2D fft to center
-    psd_fft_img = np.log(np.abs(fft_img)**2) # https://dsp.stackexchange.com/a/10064
-    #plot_array(psd_fft_img, image_names)
+    image_names = open("lnis-mosaic/read.txt","r").readlines()
+    f, image_names = zip(*[('lnis-mosaic/' + fs.strip(), fs.strip().split('.')[0]) for fs in image_names]) #https://stackoverflow.com/a/2050649, https://stackoverflow.com/a/7558990
+    
+    raw_img = np.empty(len(image_names), dtype=object)
+    fft_img = np.empty(len(image_names), dtype=object)
+    psd_fft_img = np.empty(len(image_names), dtype=object)
+    lpf_fft_img = np.empty(len(image_names), dtype=object)
+    lpf_img = np.empty(len(image_names), dtype=object)
+    for i in range(len(image_names)):
+        raw_img[i] = io.imread(f[i], as_gray=True)
+        fft_img[i] = np.fft.fftshift(np.fft.fft2(raw_img[i])) # shifts corners of 2D fft to center
+        psd_fft_img[i] = np.log10(np.abs(fft_img[i])**2) # https://dsp.stackexchange.com/a/10064
+        lpf_fft_img[i] = np.multiply(lpfMask(fft_img[i]), fft_img[i]) 
+        lpf_img[i] = np.fft.ifft2(np.fft.ifftshift(lpf_fft_img[i])).real
+    plot_array(psd_fft_img, image_names)
+    plot_array(lpf_img, image_names)
 
-    lpf_fft_img = np.multiply(lpfMask(fft_img), fft_img[:])
-    lpf_img = np.fft.ifft2(np.fft.ifftshift(lpf_fft_img)).real
-    #plot_array(lpf_img.astype(np.int8), image_names)
-
-    pxy = phase_correlation(raw_img[2], raw_img[2]).real
-    x, y = peakFind(pxy)
+    pxy = phase_correlation(raw_img[0], raw_img[1]).real
+    peaks = peakFind(pxy)
     io.imshow(pxy)
     return
 
