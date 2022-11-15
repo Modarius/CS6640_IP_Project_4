@@ -41,6 +41,31 @@ def peakFind(in_img):
     peaks = [(x,y), (width - x,y), (x, height- y), (width - x, height - y)]
     return peaks
 
+# overlap img2 onto img1, return the result and mse of the overlap
+def overlap(img2, img1, offset):
+    width = img1.shape[0]
+    height = img1.shape[1]
+    if (offset[0] < 0):
+        if (offset[1] < 0): # overlap is top left corner of img1 with bottom right corner of img2
+            a = img1[0:(height - offset[1]), 0:(width - offset[0])]
+            b = img2[offset[1]-1:-1, offset[0]-1:-1]
+        else:               # overlap is bottom left corner of img1 with top right corner of img2
+            a = img1[offset[1]-1:-1, 0:(width - offset[0])]
+            b = img2[0:(height - offset[1]), offset[0]-1:-1]
+    else:
+        if (offset[1] < 0): # overlap is top right corner of img1 with bottom left corner of img2
+            a = img1[0:(height - offset[1]), offset[0]-1:-1]
+            b = img2[offset[1]-1:-1, 0:(width - offset[0])]
+        else:               # overlap is bottom right corner of img1 with top left corner of img2
+            a = img1[offset[1]-1:-1, offset[0]-1:-1]
+            b = img2[0:(height - offset[1]), 0:(width - offset[0])]
+    f = plt.figure()
+    f.add_subplot(121)
+    io.imshow(a)
+    f.add_subplot(122)
+    io.imshow(b)
+    return
+
 def main():
     image_names = open("lnis-mosaic/read.txt","r").readlines()
     f, image_names = zip(*[('lnis-mosaic/' + fs.strip(), fs.strip().split('.')[0]) for fs in image_names]) #https://stackoverflow.com/a/2050649, https://stackoverflow.com/a/7558990
@@ -56,12 +81,16 @@ def main():
         psd_fft_img[i] = np.log10(np.abs(fft_img[i])**2) # https://dsp.stackexchange.com/a/10064
         lpf_fft_img[i] = np.multiply(lpfMask(fft_img[i]), fft_img[i]) 
         lpf_img[i] = np.fft.ifft2(np.fft.ifftshift(lpf_fft_img[i])).real
-    plot_array(psd_fft_img, image_names)
-    plot_array(lpf_img, image_names)
+    #plot_array(psd_fft_img, image_names)
+    #plot_array(lpf_img, image_names)
 
     pxy = phase_correlation(raw_img[0], raw_img[1]).real
     peaks = peakFind(pxy)
-    io.imshow(pxy)
+    #io.imshow(pxy)
+    for peak in peaks:
+        img1 = raw_img[0]
+        img2 = raw_img[1]
+        overlap(img1, img2, peak)
     return
 
 if __name__ == "__main__":
